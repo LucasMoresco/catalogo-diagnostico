@@ -69,6 +69,7 @@
 
 <h1>Acompanhamento de testes</h1>
 <div class="sub">Resolução de problemas · status por <b>workflow</b> (selecione abaixo) · compartilhado (você e a IA) · lab.pulsus.mobi</div>
+<div style="margin-top:8px;font-size:12.5px"><a href="comparativo.html" style="color:var(--or);text-decoration:none;font-weight:600">↦ Ver comparativo (checklist de quem atende mais)</a></div>
 
 <div class="bar">
   <label class="wfwrap">workflow: <select id="wfsel" onchange="setWorkflow(this.value)"></select></label>
@@ -119,7 +120,10 @@ const WORKFLOWS = [
   { id:'demo',       label:'Demo [Lucas]' },
 ];
 const WF_KEY = 'tracker_wf';
-let currentWf = (function(){ try{ return localStorage.getItem(WF_KEY) || 'vinicius'; }catch(e){ return 'vinicius'; } })();
+let currentWf = (function(){
+  try{ const u=new URLSearchParams(location.search).get('wf'); if(u) return u; }catch(e){}
+  try{ return localStorage.getItem(WF_KEY) || 'vinicius'; }catch(e){ return 'vinicius'; }
+})();
 // [valor no banco, classe do botao, rotulo]  -- ordem = pior -> melhor apos iniciar
 const SB   = [
   ['nao_concluido','nao','Não iniciado'],
@@ -141,7 +145,15 @@ async function load(){
     const data = await r.json();
     if(!Array.isArray(data) || (data[0]&&data[0].error)) throw new Error((data[0]&&data[0].error)||'resposta inesperada');
     render(data);
+    scrollToHash();
   }catch(e){ el('err').textContent='Falha ao carregar: '+e.message; }
+}
+function scrollToHash(){
+  const h=location.hash; if(!h||h.indexOf('#row-')!==0) return;
+  const x=el(h.slice(1)); if(!x) return;
+  x.scrollIntoView({behavior:'smooth',block:'center'});
+  x.style.transition='background .3s'; x.style.background='#20304a';
+  setTimeout(()=>{ x.style.background=''; },1800);
 }
 
 function render(rows){
