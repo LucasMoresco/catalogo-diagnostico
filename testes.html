@@ -50,13 +50,16 @@
   .add .grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:9px 0}
   .add input{width:100%}
   #err{color:var(--rd);font-size:12.5px;margin:8px 0}
+  .wfwrap{font-size:12px;color:var(--mut);display:flex;align-items:center;gap:6px;font-weight:700;white-space:nowrap}
+  #wfsel{font:inherit;font-size:12.5px;font-weight:700;background:var(--pan2);color:var(--tx);border:1px solid var(--or);border-radius:7px;padding:6px 9px;cursor:pointer}
   @media(max-width:720px){.sb{font-size:11px;padding:8px 5px;min-width:64px}}
 </style></head><body><div class="wrap">
 
 <h1>Acompanhamento de testes</h1>
-<div class="sub">Resolução de problemas · status vivo (compartilhado: você e a IA) · lab.pulsus.mobi</div>
+<div class="sub">Resolução de problemas · status por <b>workflow</b> (selecione abaixo) · compartilhado (você e a IA) · lab.pulsus.mobi</div>
 
 <div class="bar">
+  <label class="wfwrap">workflow: <select id="wfsel" onchange="setWorkflow(this.value)"></select></label>
   <div class="prog" id="prog"><i style="width:0;background:var(--gr)"></i><i style="width:0;background:var(--yl)"></i><i style="width:0;background:var(--rd)"></i><i style="width:0;background:var(--blue)"></i></div>
   <span class="pill dot c-conc" id="p-conc"><b>0</b> concluídos</span>
   <span class="pill dot c-parc" id="p-parc"><b>0</b> parciais</span>
@@ -90,9 +93,20 @@
 <div id="content"><p style="color:var(--mut)">Carregando…</p></div>
 
 <script>
-const GET  = 'https://lab.pulsus.mobi/webhook/88ef27ee-0284-40e2-ba5f-f273ec13373a';
-const POST = 'https://lab.pulsus.mobi/webhook/99774f67-6890-4f17-9ca3-156b06a01c73';
+// TestTracker API v2 — status por workflow (tabela test_results, chave (code, workflow))
+const GET_LIST    = 'https://lab.pulsus.mobi/webhook/2caf0c35-fe9c-418a-ace9-6054e559724d';
+const POST_RESULT = 'https://lab.pulsus.mobi/webhook/454ee1dc-37e2-4d7a-a327-8fa85c13414c';
+const POST_CASE   = 'https://lab.pulsus.mobi/webhook/4adce02d-8e55-4fc3-8c72-14696785f973';
 const KEY  = '2d0964832e944bcea13748bce33fc7cc';
+// workflows testaveis (casam com o seletor do device)
+const WORKFLOWS = [
+  { id:'autonomous', label:'Autonomous original' },
+  { id:'vinicius',   label:'Vinícius (2mDb)' },
+  { id:'lucas',      label:'[Lucas]' },
+  { id:'demo',       label:'Demo [Lucas]' },
+];
+const WF_KEY = 'tracker_wf';
+let currentWf = (function(){ try{ return localStorage.getItem(WF_KEY) || 'vinicius'; }catch(e){ return 'vinicius'; } })();
 // [valor no banco, classe do botao, rotulo]  -- ordem = pior -> melhor apos iniciar
 const SB   = [
   ['nao_concluido','nao','Não iniciado'],
@@ -104,11 +118,13 @@ const SB   = [
 const CLS  = { nao_concluido:'sb-nao', em_andamento:'sb-ini', falhou:'sb-falhou', parcial:'sb-parcial', concluido:'sb-concluido' };
 function esc(s){const d=document.createElement('div');d.textContent=s==null?'':String(s);return d.innerHTML;}
 function el(id){return document.getElementById(id);}
+function initWfSelector(){ const sel=el('wfsel'); if(!sel) return; sel.innerHTML=WORKFLOWS.map(w=>'<option value="'+w.id+'"'+(w.id===currentWf?' selected':'')+'>'+esc(w.label)+'</option>').join(''); }
+function setWorkflow(id){ currentWf=id; try{ localStorage.setItem(WF_KEY,id); }catch(e){} load(); }
 
 async function load(){
   el('err').textContent='';
   try{
-    const r = await fetch(GET, { headers:{'x-audit-key':KEY} });
+    const r = await fetch(GET_LIST+'?workflow='+encodeURIComponent(currentWf), { headers:{'x-audit-key':KEY} });
     const data = await r.json();
     if(!Array.isArray(data) || (data[0]&&data[0].error)) throw new Error((data[0]&&data[0].error)||'resposta inesperada');
     render(data);
@@ -165,9 +181,9 @@ function updateProgress(){
   pr[2].style.width=(n?100*f/n:0)+'%'; pr[3].style.width=(n?100*i/n:0)+'%';
 }
 
-async function post(payload, mark){
+async function post(url, payload, mark){
   if(mark){ mark.className='savemark'; mark.textContent='salvando…'; }
-  const r=await fetch(POST,{method:'POST',headers:{'x-audit-key':KEY,'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  const r=await fetch(url,{method:'POST',headers:{'x-audit-key':KEY,'Content-Type':'application/json'},body:JSON.stringify(payload)});
   const d=await r.json(); const row=Array.isArray(d)?d[0]:d;
   if(row&&row.error) throw new Error(row.error);
   if(mark){ mark.className='savemark ok'; mark.textContent='salvo ✓'; setTimeout(()=>{if(mark.textContent==='salvo ✓')mark.textContent='';},1600); }
@@ -181,20 +197,20 @@ function saveStatus(code,status){
     const b=row.querySelector('.'+CLS[status]); if(b) b.classList.add('on');
   }
   updateProgress();
-  post({code,status}, el('mk-'+code)).catch(()=>{ if(el('mk-'+code)){el('mk-'+code).className='savemark err';el('mk-'+code).textContent='erro ao salvar';} });
+  post(POST_RESULT,{code,workflow:currentWf,status}, el('mk-'+code)).catch(()=>{ if(el('mk-'+code)){el('mk-'+code).className='savemark err';el('mk-'+code).textContent='erro ao salvar';} });
 }
 function saveNote(code){
-  post({code,notes:el('nt-'+code).value}, el('mk-'+code)).catch(()=>{ if(el('mk-'+code)){el('mk-'+code).className='savemark err';el('mk-'+code).textContent='erro ao salvar';} });
+  post(POST_RESULT,{code,workflow:currentWf,notes:el('nt-'+code).value}, el('mk-'+code)).catch(()=>{ if(el('mk-'+code)){el('mk-'+code).className='savemark err';el('mk-'+code).textContent='erro ao salvar';} });
 }
 function toggleAdd(){ el('addbox').classList.toggle('open'); }
 async function addCase(){
   const p={code:el('a-code').value.trim(),caso:el('a-caso').value.trim(),family:el('a-family').value.trim(),
            fala:el('a-fala').value.trim(),contexto:el('a-contexto').value.trim(),esperado:el('a-esperado').value.trim(),
-           seq:999,status:'nao_concluido'};
+           seq:999};
   if(!p.code){ el('err').textContent='Informe o código do caso.'; return; }
-  try{ await post(p,null); ['a-code','a-caso','a-family','a-fala','a-contexto','a-esperado'].forEach(i=>el(i).value=''); toggleAdd(); load(); }
+  try{ await post(POST_CASE,p,null); ['a-code','a-caso','a-family','a-fala','a-contexto','a-esperado'].forEach(i=>el(i).value=''); toggleAdd(); load(); }
   catch(e){ el('err').textContent='Falha ao adicionar: '+e.message; }
 }
-load();
+initWfSelector(); load();
 </script>
 </div></body></html>
