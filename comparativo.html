@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Comparativo de workflows · Casos de uso</title>
+<style>
+  :root{--bg:#0f1622;--pan:#151f2e;--pan2:#1a2637;--bd:#26334a;--tx:#e6edf6;--mut:#9fb0c6;--or:#ff6a3d;
+        --gray:#7c8aa3;--blue:#4b8bf5;--rd:#e06a6a;--yl:#e0b341;--gr:#3fb27f}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.5 -apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+  .wrap{max-width:1200px;margin:0 auto;padding:24px 18px 90px}
+  h1{font-size:21px;margin:0 0 2px}
+  .sub{color:var(--mut);font-size:12.5px}
+  a{color:var(--or);text-decoration:none} a:hover{text-decoration:underline}
+  .topnav{margin:10px 0 18px;font-size:12.5px}
+  /* placar */
+  .score{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin:14px 0 22px}
+  .card{background:var(--pan);border:1px solid var(--bd);border-radius:12px;padding:14px 15px}
+  .card.win{border-color:var(--gr)}
+  .card h3{margin:0 0 3px;font-size:14.5px}
+  .card .rank{float:right;font-size:11px;color:var(--mut);font-weight:700}
+  .card .big{font-size:26px;font-weight:800;margin:6px 0 2px}
+  .card .big small{font-size:13px;color:var(--mut);font-weight:600}
+  .mini{height:8px;border-radius:5px;background:#0b1220;overflow:hidden;display:flex;margin:8px 0 7px}
+  .mini i{display:block;height:100%}
+  .cnts{font-size:12px;color:var(--mut);display:flex;gap:12px;flex-wrap:wrap}
+  .cnts b{color:var(--tx)}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle}
+  .d-gr{background:var(--gr)} .d-yl{background:var(--yl)} .d-rd{background:var(--rd)} .d-bl{background:var(--blue)} .d-na{background:var(--gray)}
+  /* controles */
+  .bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0 12px}
+  button{font:inherit;font-size:12.5px;font-weight:600;padding:7px 12px;border-radius:7px;border:1px solid var(--bd);background:var(--pan2);color:var(--tx);cursor:pointer}
+  button.on{border-color:var(--or);color:var(--or)}
+  .legend{font-size:12px;color:var(--mut);display:flex;gap:14px;flex-wrap:wrap;margin-left:auto}
+  /* matriz */
+  .tblwrap{overflow-x:auto;border:1px solid var(--bd);border-radius:12px}
+  table{border-collapse:collapse;width:100%;min-width:720px}
+  th,td{border-bottom:1px solid var(--bd);padding:9px 11px;text-align:left;vertical-align:middle}
+  thead th{background:var(--pan2);position:sticky;top:0;z-index:2;font-size:12.5px}
+  th.wfcol,td.cell{text-align:center;width:130px}
+  .famrow td{background:#111a27;color:var(--or);font-weight:700;font-size:13px}
+  .cs{color:var(--or);font-weight:700;font-family:monospace}
+  .fala{font-size:12.8px}
+  .cell button{width:100%;border:1px solid transparent;font-size:12px;font-weight:700;padding:6px 6px;border-radius:7px}
+  .st-concluido{background:rgba(63,178,127,.16);color:var(--gr);border-color:rgba(63,178,127,.4)!important}
+  .st-parcial{background:rgba(224,179,65,.16);color:var(--yl);border-color:rgba(224,179,65,.4)!important}
+  .st-falhou{background:rgba(224,106,106,.16);color:var(--rd);border-color:rgba(224,106,106,.4)!important}
+  .st-em_andamento{background:rgba(75,139,245,.16);color:var(--blue);border-color:rgba(75,139,245,.4)!important}
+  .st-nao{background:transparent;color:var(--gray)}
+  .cell button.sel{outline:2px solid var(--or)}
+  tr.crow:hover td{background:#131e2c}
+  /* detalhe */
+  #detail{background:var(--pan);border:1px solid var(--or);border-radius:12px;padding:16px;margin:16px 0;display:none}
+  #detail.open{display:block}
+  #detail h3{margin:0 0 2px;font-size:15px}
+  #detail .meta{color:var(--mut);font-size:12.5px;margin:2px 0 10px}
+  #detail .exp{color:#bcd0ea;font-size:12.8px;margin-bottom:12px}
+  #detail .wfline{border-top:1px solid var(--bd);padding:9px 0;display:grid;grid-template-columns:130px 1fr;gap:12px;align-items:start}
+  #detail .wfline .st{font-weight:700}
+  #detail .note{color:var(--tx);font-size:12.8px}
+  #detail .links{margin-top:12px;font-size:12.5px}
+  #err{color:var(--rd);font-size:12.5px}
+  @media(max-width:640px){#detail .wfline{grid-template-columns:1fr}}
+</style></head><body><div class="wrap">
+
+<h1>Comparativo de workflows</h1>
+<div class="sub">Checklist de casos de uso por workflow · qual modelo atende mais requisitos · lab.pulsus.mobi</div>
+<div class="topnav">↦ <a href="testes.html">Ir para o tracker (editar status + histórico)</a></div>
+
+<div id="err"></div>
+<div class="score" id="score"></div>
+
+<div class="bar">
+  <button id="btn-run" class="on" onclick="setFilter('run')">Só rodados</button>
+  <button id="btn-all" onclick="setFilter('all')">Todos os casos</button>
+  <span class="legend">
+    <span><span class="dot d-gr"></span>Atende</span>
+    <span><span class="dot d-yl"></span>Parcial</span>
+    <span><span class="dot d-rd"></span>Falhou</span>
+    <span><span class="dot d-na"></span>não rodado</span>
+  </span>
+</div>
+
+<div id="detail"></div>
+
+<div class="tblwrap"><table id="tbl"><tbody><tr><td>Carregando…</td></tr></tbody></table></div>
+
+<script>
+const MATRIX = 'https://lab.pulsus.mobi/webhook/c21bd78a-be52-4535-9dc2-897182eb6a9a';
+const KEY = '2d0964832e944bcea13748bce33fc7cc';
+const WF = [
+  { id:'autonomous', label:'Autonomous original', short:'Autonomous' },
+  { id:'vinicius',   label:'Vinícius (2mDb)',      short:'Vinícius' },
+  { id:'lucas',      label:'[Lucas]',              short:'[Lucas]' },
+  { id:'demo',       label:'Demo [Lucas]',         short:'Demo' },
+];
+const STMAP = { concluido:['st-concluido','Atende'], parcial:['st-parcial','Parcial'], falhou:['st-falhou','Falhou'], em_andamento:['st-em_andamento','Iniciado'] };
+function stInfo(s){ return STMAP[s] || ['st-nao','—']; }
+function esc(s){const d=document.createElement('div');d.textContent=s==null?'':String(s);return d.innerHTML;}
+function el(id){return document.getElementById(id);}
+let ROWS=[], FILTER='run';
+
+async function load(){
+  try{
+    const r=await fetch(MATRIX,{headers:{'x-audit-key':KEY}});
+    const d=await r.json();
+    if(!Array.isArray(d)||(d[0]&&d[0].error)) throw new Error((d[0]&&d[0].error)||'resposta inesperada');
+    ROWS=d; renderScore(); renderTable();
+  }catch(e){ el('err').textContent='Falha ao carregar: '+e.message; }
+}
+function isRun(r){ return WF.some(w=>{const s=r['st_'+w.id]; return s && s!=='nao_concluido';}); }
+
+function renderScore(){
+  const runRows=ROWS.filter(isRun);
+  const stats=WF.map(w=>{
+    let c=0,p=0,f=0,i=0,tested=0;
+    runRows.forEach(r=>{ const s=r['st_'+w.id];
+      if(s==='concluido'){c++;tested++;} else if(s==='parcial'){p++;tested++;}
+      else if(s==='falhou'){f++;tested++;} else if(s==='em_andamento'){i++;tested++;} });
+    const score= tested? Math.round(100*(c+0.5*p)/tested) : 0;
+    return {w,c,p,f,i,tested,score};
+  });
+  const ranked=[...stats].sort((a,b)=> b.score-a.score || b.c-a.c);
+  const topScore=ranked.length?ranked[0].score:0;
+  el('score').innerHTML=stats.map(s=>{
+    const rank=ranked.findIndex(x=>x.w.id===s.w.id)+1;
+    const t=s.tested||1;
+    return '<div class="card'+(s.score===topScore&&s.tested?' win':'')+'">'
+      +'<span class="rank">#'+rank+'</span><h3>'+esc(s.w.label)+'</h3>'
+      +'<div class="big">'+s.score+'<small>% atende</small></div>'
+      +'<div class="mini">'
+        +'<i style="width:'+(100*s.c/t)+'%;background:var(--gr)"></i>'
+        +'<i style="width:'+(100*s.p/t)+'%;background:var(--yl)"></i>'
+        +'<i style="width:'+(100*s.f/t)+'%;background:var(--rd)"></i>'
+        +'<i style="width:'+(100*s.i/t)+'%;background:var(--blue)"></i>'
+      +'</div>'
+      +'<div class="cnts"><span><span class="dot d-gr"></span><b>'+s.c+'</b> atende</span>'
+      +'<span><span class="dot d-yl"></span><b>'+s.p+'</b> parcial</span>'
+      +'<span><span class="dot d-rd"></span><b>'+s.f+'</b> falhou</span>'
+      +'<span>rodados: <b>'+s.tested+'</b></span></div></div>';
+  }).join('');
+}
+
+function setFilter(f){ FILTER=f; el('btn-run').classList.toggle('on',f==='run'); el('btn-all').classList.toggle('on',f==='all'); renderTable(); }
+
+function renderTable(){
+  const rows=(FILTER==='run')?ROWS.filter(isRun):ROWS;
+  let html='<thead><tr><th>Caso</th>'+WF.map(w=>'<th class="wfcol">'+esc(w.short)+'</th>').join('')+'</tr></thead><tbody>';
+  let fam=null;
+  rows.forEach(r=>{
+    if(r.family!==fam){ fam=r.family; html+='<tr class="famrow"><td colspan="'+(WF.length+1)+'">'+esc(fam)+'</td></tr>'; }
+    html+='<tr class="crow"><td><span class="cs">'+esc(r.code)+'</span> <span class="fala">'+esc(r.fala||'')+'</span></td>';
+    WF.forEach(w=>{
+      const s=r['st_'+w.id]; const [cls,lbl]=stInfo(s);
+      html+='<td class="cell"><button class="'+cls+'" id="c-'+esc(r.code)+'-'+w.id+'" onclick="showDetail(\''+esc(r.code)+'\',\''+w.id+'\')">'+lbl+'</button></td>';
+    });
+    html+='</tr>';
+  });
+  html+='</tbody>';
+  if(!rows.length) html='<tbody><tr><td style="color:var(--mut);padding:16px">Nenhum caso rodado ainda. Clique em "Todos os casos".</td></tr></tbody>';
+  el('tbl').innerHTML=html;
+}
+
+function showDetail(code, wfId){
+  const r=ROWS.find(x=>x.code===code); if(!r) return;
+  document.querySelectorAll('.cell button.sel').forEach(b=>b.classList.remove('sel'));
+  const b=el('c-'+code+'-'+wfId); if(b) b.classList.add('sel');
+  let html='<h3><span class="cs">'+esc(r.code)+'</span> '+esc(r.caso||'')+'</h3>'
+    +'<div class="meta">'+esc(r.fala||'')+(r.contexto?' · contexto: '+esc(r.contexto):'')+'</div>'
+    +(r.esperado?'<div class="exp"><b>Esperado:</b> '+esc(r.esperado)+'</div>':'');
+  WF.forEach(w=>{
+    const s=r['st_'+w.id]; const [cls,lbl]=stInfo(s); const note=r['nt_'+w.id];
+    const rc=Number(r['rc_'+w.id]||0);
+    html+='<div class="wfline"><div><b>'+esc(w.label)+'</b><br><span class="st '+cls+'" style="padding:0">'+lbl+'</span>'
+      +(rc?' <span style="color:var(--mut);font-size:11px">('+rc+' run)</span>':'')+'</div>'
+      +'<div class="note">'+(note?esc(note):'<span style="color:var(--mut)">sem nota</span>')
+      +' <div class="links"><a href="testes.html?wf='+w.id+'#row-'+esc(r.code)+'" target="_blank">abrir no tracker ↦</a></div></div></div>';
+  });
+  const dt=el('detail'); dt.className='open'; dt.innerHTML=html;
+  dt.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+load();
+</script>
+</div></body></html>
