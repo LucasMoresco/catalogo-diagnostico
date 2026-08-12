@@ -45,9 +45,13 @@
   .st-falhou{border-left:3px solid var(--rd)} .st-parcial{border-left:3px solid var(--yl)} .st-concluido{border-left:3px solid var(--gr)}
   .savemark{font-size:11px;color:var(--mut);min-height:14px;margin-top:5px;display:inline-block}
   .savemark.ok{color:var(--gr)} .savemark.err{color:var(--rd)}
-  .histbtn{background:none;border:none;color:var(--mut);font-size:12px;font-weight:600;padding:6px 0;cursor:pointer;display:block}
-  .histbtn:hover{color:var(--or)}
-  .hist{display:none;margin-top:6px} .hist.open{display:block}
+  .histbtn{display:inline-flex;align-items:center;gap:7px;margin-top:11px;background:var(--pan2);border:1px solid var(--bd);color:var(--tx);font-size:12.5px;font-weight:600;padding:8px 13px;border-radius:8px;cursor:pointer}
+  .histbtn:hover{border-color:var(--or);color:var(--or)}
+  .histbtn.open,.histbtn.has{border-color:var(--or);color:var(--or)}
+  .histbtn .carat{font-size:11px}
+  .histbtn .cnt{background:var(--or);color:#fff;border-radius:999px;font-size:11px;padding:1px 8px;font-weight:700;min-width:20px;text-align:center}
+  .histbtn.empty{color:var(--mut)} .histbtn.empty .cnt{background:var(--bd);color:var(--mut)}
+  .hist{display:none;margin-top:8px} .hist.open{display:block}
   .histitem{background:#0b1220;border:1px solid var(--bd);border-radius:8px;padding:9px 11px;margin:7px 0;font-size:12.5px}
   .histitem .hh{color:var(--mut);font-size:11.5px;margin-bottom:4px;display:flex;gap:10px;flex-wrap:wrap}
   .histitem .hu{color:var(--tx);font-weight:600}
@@ -151,6 +155,7 @@ function render(rows){
       byFam[fam][caso].forEach(r=>{
         const c=esc(r.code);
         const st=normStatus(r.status);
+        const rc=Number(r.run_count||0);
         const btns=SB.map(x=>'<button class="sb sb-'+x[1]+(st===x[0]?' on':'')+'" onclick="saveStatus(\''+c+'\',\''+x[0]+'\')">'+x[2]+'</button>').join('');
         html+='<div class="row st-'+esc(st)+'" id="row-'+c+'">'
           +'<div class="rtop">'
@@ -162,7 +167,7 @@ function render(rows){
           +'<div class="statusbtns">'+btns+'</div>'
           +'<textarea class="nt" id="nt-'+c+'" placeholder="notas do teste (observações, evidência, execução, o que passou / o que falhou)" onblur="saveNote(\''+c+'\')">'+esc(r.notes||'')+'</textarea>'
           +'<span class="savemark" id="mk-'+c+'"></span>'
-          +'<button class="histbtn" id="hb-'+c+'" onclick="toggleHist(\''+c+'\')">▸ histórico</button>'
+          +'<button class="histbtn '+(rc>0?'has':'empty')+'" id="hb-'+c+'" onclick="toggleHist(\''+c+'\')"><span class="carat">▸</span> Histórico <span class="cnt">'+rc+'</span></button>'
           +'<div class="hist" id="hist-'+c+'"></div>'
           +'</div>';
       });
@@ -214,9 +219,9 @@ function saveNote(code){
   post(POST_RESULT,{code,workflow:currentWf,notes:el('nt-'+code).value}, el('mk-'+code)).catch(()=>{ if(el('mk-'+code)){el('mk-'+code).className='savemark err';el('mk-'+code).textContent='erro ao salvar';} });
 }
 async function toggleHist(code){
-  const box=el('hist-'+code), btn=el('hb-'+code);
-  if(box.classList.contains('open')){ box.classList.remove('open'); btn.textContent='▸ histórico'; return; }
-  box.classList.add('open'); btn.textContent='▾ histórico';
+  const box=el('hist-'+code), btn=el('hb-'+code), car=btn.querySelector('.carat');
+  if(box.classList.contains('open')){ box.classList.remove('open'); btn.classList.remove('open'); if(car)car.textContent='▸'; return; }
+  box.classList.add('open'); btn.classList.add('open'); if(car)car.textContent='▾';
   box.innerHTML='<span style="color:var(--mut);font-size:12px">carregando…</span>';
   try{
     const r=await fetch(HISTORY+'?code='+encodeURIComponent(code)+'&workflow='+encodeURIComponent(currentWf),{headers:{'x-audit-key':KEY}});
