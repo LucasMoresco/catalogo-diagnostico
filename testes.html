@@ -45,6 +45,14 @@
   .st-falhou{border-left:3px solid var(--rd)} .st-parcial{border-left:3px solid var(--yl)} .st-concluido{border-left:3px solid var(--gr)}
   .savemark{font-size:11px;color:var(--mut);min-height:14px;margin-top:5px;display:inline-block}
   .savemark.ok{color:var(--gr)} .savemark.err{color:var(--rd)}
+  .histbtn{background:none;border:none;color:var(--mut);font-size:12px;font-weight:600;padding:6px 0;cursor:pointer;display:block}
+  .histbtn:hover{color:var(--or)}
+  .hist{display:none;margin-top:6px} .hist.open{display:block}
+  .histitem{background:#0b1220;border:1px solid var(--bd);border-radius:8px;padding:9px 11px;margin:7px 0;font-size:12.5px}
+  .histitem .hh{color:var(--mut);font-size:11.5px;margin-bottom:4px;display:flex;gap:10px;flex-wrap:wrap}
+  .histitem .hu{color:var(--tx);font-weight:600}
+  .histitem .ha{color:#bcd0ea;margin-top:3px;white-space:pre-wrap}
+  .histitem .hc{color:var(--yl);font-family:monospace;font-size:11px;margin-top:4px;word-break:break-all}
   .add{background:var(--pan);border:1px dashed var(--bd);border-radius:10px;padding:15px;margin:18px 0;display:none}
   .add.open{display:block}
   .add .grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:9px 0}
@@ -97,6 +105,7 @@
 const GET_LIST    = 'https://lab.pulsus.mobi/webhook/2caf0c35-fe9c-418a-ace9-6054e559724d';
 const POST_RESULT = 'https://lab.pulsus.mobi/webhook/454ee1dc-37e2-4d7a-a327-8fa85c13414c';
 const POST_CASE   = 'https://lab.pulsus.mobi/webhook/4adce02d-8e55-4fc3-8c72-14696785f973';
+const HISTORY     = 'https://lab.pulsus.mobi/webhook/a108c940-55a1-48a6-ba4c-0cd0c82d5bfa';
 const KEY  = '2d0964832e944bcea13748bce33fc7cc';
 // workflows testaveis (casam com o seletor do device)
 const WORKFLOWS = [
@@ -153,6 +162,8 @@ function render(rows){
           +'<div class="statusbtns">'+btns+'</div>'
           +'<textarea class="nt" id="nt-'+c+'" placeholder="notas do teste (observações, evidência, execução, o que passou / o que falhou)" onblur="saveNote(\''+c+'\')">'+esc(r.notes||'')+'</textarea>'
           +'<span class="savemark" id="mk-'+c+'"></span>'
+          +'<button class="histbtn" id="hb-'+c+'" onclick="toggleHist(\''+c+'\')">▸ histórico</button>'
+          +'<div class="hist" id="hist-'+c+'"></div>'
           +'</div>';
       });
       html+='</div>';
@@ -201,6 +212,39 @@ function saveStatus(code,status){
 }
 function saveNote(code){
   post(POST_RESULT,{code,workflow:currentWf,notes:el('nt-'+code).value}, el('mk-'+code)).catch(()=>{ if(el('mk-'+code)){el('mk-'+code).className='savemark err';el('mk-'+code).textContent='erro ao salvar';} });
+}
+async function toggleHist(code){
+  const box=el('hist-'+code), btn=el('hb-'+code);
+  if(box.classList.contains('open')){ box.classList.remove('open'); btn.textContent='▸ histórico'; return; }
+  box.classList.add('open'); btn.textContent='▾ histórico';
+  box.innerHTML='<span style="color:var(--mut);font-size:12px">carregando…</span>';
+  try{
+    const r=await fetch(HISTORY+'?code='+encodeURIComponent(code)+'&workflow='+encodeURIComponent(currentWf),{headers:{'x-audit-key':KEY}});
+    const d=await r.json();
+    if(!Array.isArray(d)||(d[0]&&d[0].error)) throw new Error((d[0]&&d[0].error)||'erro');
+    renderHistory(box,d);
+  }catch(e){ box.innerHTML='<span style="color:var(--rd);font-size:12px">falha: '+esc(e.message)+'</span>'; }
+}
+function fmtCost(r){
+  const t=[];
+  if(r.tokens_in!=null||r.tokens_out!=null) t.push((r.tokens_in||0)+'/'+(r.tokens_out||0)+' tok');
+  if(r.cost_usd!=null) t.push('$'+Number(r.cost_usd).toFixed(4));
+  if(r.model) t.push(r.model);
+  return t.join(' · ');
+}
+function renderHistory(box, rows){
+  if(!rows.length){ box.innerHTML='<span style="color:var(--mut);font-size:12px">sem execuções registradas neste workflow.</span>'; return; }
+  box.innerHTML=rows.map(function(r){
+    const when=String(r.run_at||r.received_at||'').replace('T',' ').slice(0,19);
+    let cmd=''; try{ const c=typeof r.commands==='string'?JSON.parse(r.commands):r.commands; if(c&&c.length) cmd=JSON.stringify(c); }catch(e){ cmd=r.commands?String(r.commands):''; }
+    const meta=[when, fmtCost(r), r.execution_id?('exec '+r.execution_id):''].filter(Boolean).join(' · ');
+    return '<div class="histitem"><div class="hh">'+esc(meta)+'</div>'
+      +(r.user_message?'<div class="hu">'+esc(r.user_message)+'</div>':'')
+      +(r.assistant_message?'<div class="ha">'+esc(r.assistant_message)+'</div>':'')
+      +(cmd?'<div class="hc">cmd: '+esc(cmd)+'</div>':'')
+      +(r.note?'<div class="hh" style="margin-top:5px">nota: '+esc(r.note)+'</div>':'')
+      +'</div>';
+  }).join('');
 }
 function toggleAdd(){ el('addbox').classList.toggle('open'); }
 async function addCase(){
