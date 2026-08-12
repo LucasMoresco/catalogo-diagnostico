@@ -64,6 +64,7 @@
 
 <h1>Comparativo de workflows</h1>
 <div class="sub">Checklist de casos de uso por workflow · qual modelo atende mais requisitos · lab.pulsus.mobi</div>
+<div class="sub" style="margin-top:6px;font-size:12px">Linhagem: <b>Autonomous (original)</b> → <b>Vinícius</b> (cópia dele) → <b>Demo</b> (cópia da do Vinícius, com fix de WIPE). O <b>[Lucas] base</b> é cópia hardened da original (linha à parte).</div>
 <div class="topnav">↦ <a href="testes.html">Ir para o tracker (editar status + histórico)</a></div>
 
 <div id="err"></div>
@@ -88,10 +89,10 @@
 const MATRIX = 'https://lab.pulsus.mobi/webhook/c21bd78a-be52-4535-9dc2-897182eb6a9a';
 const KEY = '2d0964832e944bcea13748bce33fc7cc';
 const WF = [
-  { id:'autonomous', label:'Autonomous original', short:'Autonomous' },
-  { id:'vinicius',   label:'Vinícius (2mDb)',      short:'Vinícius' },
-  { id:'lucas',      label:'[Lucas]',              short:'[Lucas]' },
-  { id:'demo',       label:'Demo [Lucas]',         short:'Demo' },
+  { id:'autonomous', label:'Autonomous (original)',            short:'Autonomous' },
+  { id:'vinicius',   label:'Vinícius (2mDb · o dele)',         short:'Vinícius' },
+  { id:'lucas',      label:'[Lucas] base (PKeMq)',             short:'[Lucas] base' },
+  { id:'demo',       label:'Demo cache/WIPE (cópia do Vinícius)', short:'Demo (cp Vini)' },
 ];
 const STMAP = { concluido:['st-concluido','Atende'], parcial:['st-parcial','Parcial'], falhou:['st-falhou','Falhou'], em_andamento:['st-em_andamento','Iniciado'] };
 function stInfo(s){ return STMAP[s] || ['st-nao','—']; }
