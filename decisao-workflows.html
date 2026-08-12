@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Decisão · Comparativo dos 3 workflows</title>
+<style>
+  :root{--bg:#0f1622;--pan:#151f2e;--pan2:#1a2637;--bd:#26334a;--tx:#e6edf6;--mut:#9fb0c6;--or:#ff6a3d;
+        --gr:#3fb27f;--yl:#e0b341;--rd:#e06a6a;--blue:#4b8bf5}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--tx);font:14.5px/1.6 -apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+  .wrap{max-width:1080px;margin:0 auto;padding:28px 20px 100px}
+  h1{font-size:23px;margin:0 0 4px}
+  h2{font-size:17px;margin:30px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--bd);color:var(--or)}
+  .sub{color:var(--mut);font-size:13px}
+  p{margin:8px 0}
+  code{font-family:"SF Mono",Menlo,monospace;font-size:12.5px;background:#0b1220;border:1px solid var(--bd);border-radius:4px;padding:1px 5px}
+  .tblwrap{overflow-x:auto;border:1px solid var(--bd);border-radius:10px;margin:12px 0}
+  table{border-collapse:collapse;width:100%;min-width:640px}
+  th,td{border-bottom:1px solid var(--bd);padding:9px 12px;text-align:left;vertical-align:top;font-size:13.3px}
+  thead th{background:var(--pan2);position:sticky;top:0}
+  th.dim{width:230px;color:var(--mut)}
+  tbody tr:hover td{background:#131e2c}
+  .yes{color:var(--gr);font-weight:700} .no{color:var(--rd);font-weight:700} .warn{color:var(--yl);font-weight:700}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin:14px 0}
+  .card{background:var(--pan);border:1px solid var(--bd);border-radius:12px;padding:16px}
+  .card.win{border-color:var(--gr)}
+  .card h3{margin:0 0 8px;font-size:15.5px}
+  .rank{float:right;font-size:12px;color:var(--mut);font-weight:800}
+  .card ul{margin:6px 0;padding-left:18px} .card li{margin:4px 0;font-size:13.2px}
+  .pro{color:var(--gr)} .con{color:var(--rd)}
+  .box{border:1px solid var(--bd);border-left:3px solid var(--or);border-radius:8px;padding:12px 14px;background:var(--pan);margin:12px 0}
+  .box.gr{border-left-color:var(--gr)} .box.rd{border-left-color:var(--rd)}
+  .note{color:var(--mut);font-size:12.5px}
+  .rc{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+  .rc .cell{background:var(--pan);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;font-size:13px}
+  .rc .cell b{color:var(--or)}
+  a{color:var(--or)}
+  @media(max-width:640px){.rc{grid-template-columns:1fr}}
+</style></head><body><div class="wrap">
+
+<h1>Decisão: qual dos 3 workflows seguir</h1>
+<div class="sub">Comparativo estrutural (config) + comportamental (testes) · consulta read-only aos 3 workflows · 2026-08-12</div>
+<div class="box"><b>Como ler.</b> A tabela mostra <b>o que difere na configuração</b> de cada workflow. Depois, o mapa liga essa configuração ao <b>comportamento observado nos testes</b> (por que cada um se comporta como se comporta). No fim, um <b>ranking</b> e um <b>caminho recomendado</b>. O Demo (cópia cache/WIPE) foi tirado da relação, como combinado.</div>
+
+<h2>1. Diferenças de configuração</h2>
+<div class="tblwrap"><table>
+<thead><tr><th class="dim">Dimensão</th><th>Autonomous (original)</th><th>Vinícius (2mDb)</th><th>[Lucas] base (PKeMq)</th></tr></thead>
+<tbody>
+<tr><td class="dim">Nós / tamanho</td><td>53 nós</td><td>38 nós</td><td>36 nós</td></tr>
+<tr><td class="dim">System message</td><td>30,9 mil chars</td><td class="warn">14,5 mil (o mais enxuto)</td><td class="yes">44,7 mil (o mais robusto)</td></tr>
+<tr><td class="dim">Guarda de telemetria (hard)</td><td class="warn">ausente (só checa via tool)</td><td class="no">presente, mas DESLIGADA</td><td class="yes">ativa (applyGuard, 85%/42°C)</td></tr>
+<tr><td class="dim">Output parser</td><td class="yes">desligado</td><td class="no">LIGADO</td><td class="warn">saída estruturada (inline)</td></tr>
+<tr><td class="dim">Canal de verdade-de-ação<br>(Automation Outcome)</td><td class="no">ausente</td><td class="no">presente, mas DESLIGADO</td><td class="yes">ativo</td></tr>
+<tr><td class="dim">Seção "verdade de ação" no prompt</td><td class="no">não</td><td class="no">não</td><td class="yes">sim</td></tr>
+<tr><td class="dim">WIPE no allowlist de comandos</td><td class="no">não</td><td class="yes">sim</td><td class="no">não</td></tr>
+<tr><td class="dim">App Catalog (resolve identifier)</td><td class="no">não</td><td class="no">não</td><td class="no">não</td></tr>
+<tr><td class="dim">RAG / playbook (tabela)</td><td><code>n8n_vectors_v2</code></td><td><code>n8n_vectors_v3</code> (em ingestão)</td><td><code>n8n_vectors_v2</code></td></tr>
+<tr><td class="dim">Idioma</td><td class="no">responde em inglês</td><td class="yes">PT / segue o usuário</td><td class="yes">PT / segue o usuário</td></tr>
+<tr><td class="dim">Confirmação de ação</td><td class="yes">card (requires_confirmation)</td><td class="yes">card</td><td class="warn">por texto ("responda SIM")</td></tr>
+<tr><td class="dim">Auth do webhook</td><td>nenhuma</td><td>headerAuth</td><td>headerAuth</td></tr>
+<tr><td class="dim">Tools do agente</td><td colspan="3" style="text-align:center">iguais nos 3: Fetch Apps · Latest Heartbeat · Device App Block · Support Ticket · Troubleshooting Playbook</td></tr>
+</tbody></table></div>
+<div class="note">Muita coisa aqui é <b>toggle</b> (guarda on/off, parser on/off, verdade-de-ação on/off, WIPE no allowlist). Ou seja: as diferenças são em grande parte <b>de configuração</b>, não de arquitetura — o que abre espaço pra combinar o melhor de cada um.</div>
+
+<h2>2. Por que isso importa (config → comportamento observado)</h2>
+<div class="rc">
+  <div class="cell"><b>Vinícius confabula telemetria</b> (diz "temperatura alta" com o device frio) → porque a <b>Guarda está desligada</b>. Sem a checagem hard, o modelo concorda com o usuário.</div>
+  <div class="cell"><b>Vinícius quebra (resposta malformada)</b> nos casos de ação (9.3, T.1/T.3/T.4) → forte correlação com o <b>Output parser LIGADO</b> (o parser engasga com a saída estruturada dos comandos).</div>
+  <div class="cell"><b>Autonomous narra reinício falso</b> ("I'm restarting now") → não tem <b>seção de verdade-de-ação</b> nem o canal de Automation Outcome.</div>
+  <div class="cell"><b>Autonomous oferece UNINSTALL (DO-only)</b> num device sem Device Owner → sem gate de modo de gestão.</div>
+  <div class="cell"><b>Autonomous responde em inglês</b> mesmo pro usuário PT → o prompt/idioma dele default é inglês (acerta só quando o usuário é EN).</div>
+  <div class="cell"><b>[Lucas] é honesto</b> (temperatura normal, não reinicia à toa, não narra sucesso falso) → <b>Guarda ativa + verdade-de-ação ativa</b>.</div>
+  <div class="cell"><b>[Lucas] recusa demais / não resolve licença</b> (9.3, T.3) → <b>sem WIPE no allowlist e sem App Catalog</b>; ele explica em vez de agir.</div>
+  <div class="cell"><b>Autonomous é estável</b> (nunca malformou) → <b>parser desligado</b>, mesmo motivo que protege o [Lucas].</div>
+</div>
+
+<h2>3. Forças e fraquezas</h2>
+<div class="cards">
+  <div class="card win"><span class="rank">#1</span><h3>[Lucas] base (PKeMq)</h3>
+    <ul>
+      <li class="pro">✓ Guarda de telemetria ativa → honesto, não age sem justificativa</li>
+      <li class="pro">✓ Verdade-de-ação ativa (prompt + Automation Outcome) → não narra sucesso falso</li>
+      <li class="pro">✓ Prompt mais completo (44,7k) e PT / segue idioma</li>
+      <li class="pro">✓ Estável (não malformou)</li>
+      <li class="con">✗ Não resolve ação real (sem WIPE no allowlist, sem App Catalog) → recusa demais</li>
+      <li class="con">✗ Confirmação por texto ("responda SIM"), sem card</li>
+    </ul>
+  </div>
+  <div class="card"><span class="rank">#2</span><h3>Autonomous (original)</h3>
+    <ul>
+      <li class="pro">✓ Estável (parser off), base de produção</li>
+      <li class="pro">✓ Card de confirmação renderiza</li>
+      <li class="pro">✓ Checa telemetria via tool (honesto no térmico)</li>
+      <li class="con">✗ Responde em inglês pro usuário PT</li>
+      <li class="con">✗ Sem verdade-de-ação → narra reinício que não executa</li>
+      <li class="con">✗ Sem gate de modo de gestão → oferece ação DO-only</li>
+      <li class="con">✗ Sem guarda hard → propõe RESTART em device saudável</li>
+    </ul>
+  </div>
+  <div class="card"><span class="rank">#3</span><h3>Vinícius (2mDb)</h3>
+    <ul>
+      <li class="pro">✓ PT e card de confirmação</li>
+      <li class="pro">✓ WIPE no allowlist (potencial de ação)</li>
+      <li class="con">✗ Parser ligado → <b>respostas malformadas</b> nos casos de ação (maior problema)</li>
+      <li class="con">✗ Guarda desligada → confabula telemetria</li>
+      <li class="con">✗ Verdade-de-ação desligada</li>
+      <li class="con">✗ RAG em ingestão (v3, incompleto) → comportamento ainda instável</li>
+    </ul>
+  </div>
+</div>
+
+<h2>4. Ranking e recomendação</h2>
+<div class="box gr"><b>1º — [Lucas] base é a melhor fundação.</b> É o mais seguro e honesto (guarda + verdade-de-ação), o prompt mais maduro e o mais estável. O que falta nele é <b>capacidade de ação</b> (resolver e executar WIPE/limpeza com identifier). É mais fácil <b>adicionar ação a uma base honesta</b> do que <b>adicionar honestidade a uma base solta</b>.</div>
+<div class="box"><b>2º — Autonomous é a base de produção estável</b>, mas precisa de 3 correções pra ficar no nível: trava de idioma (PT), seção de verdade-de-ação e gate de modo de gestão.</div>
+<div class="box rd"><b>3º — Vinícius, hoje, é o mais problemático.</b> O parser ligado produz respostas malformadas nos casos de ação e a guarda desligada gera confabulação. Precisa de dois toggles (parser off, guarda on) antes de ser viável — e o RAG dele ainda está em ingestão.</div>
+
+<h2>5. Caminho recomendado (o "melhor dos três")</h2>
+<div class="box"><p>Como as diferenças são muito de <b>configuração</b>, o alvo ideal é uma combinação:</p>
+<ul>
+  <li>Partir da <b>[Lucas] base</b> (guarda ativa + verdade-de-ação + prompt maduro + parser controlado).</li>
+  <li>Enxertar a <b>capacidade de ação</b>: <code>WIPE_APP_DATA</code>/limpeza no allowlist <b>+ App Catalog</b> pra resolver o identifier (foi o que fez o Demo ganhar no 9.3).</li>
+  <li>Trocar a confirmação por <b>card</b> (requires_confirmation) em vez do "responda SIM" em texto.</li>
+  <li>Ajustar o gate de <b>modo de gestão</b> pra gatear a <b>oferta</b> (não propor ação DO-only que vira no-op).</li>
+</ul>
+<p class="note">Isso mantém a honestidade do [Lucas] e ganha a capacidade de ação do Demo, sem herdar a confabulação/malformação do Vinícius.</p></div>
+
+<div class="box"><b>Ressalva.</b> O <b>RAG ainda está em ingestão</b> (o playbook do Vinícius está em <code>n8n_vectors_v3</code>, incompleto). O comportamento de "resolução de problemas" vai mudar conforme os playbooks sobem, então este comparativo é um <b>snapshot</b>. Vale re-rodar os casos depois que a ingestão fechar — o histórico por <code>execution_id</code> permite comparar antes/depois no mesmo caso.</div>
+
+<div class="note" style="margin-top:20px">Fontes: consulta read-only aos workflows <code>fyE5…</code>, <code>2mDb…</code>, <code>PKeMq…</code> (config) + rodadas de teste registradas no tracker (comportamento). Nenhum workflow foi alterado.</div>
+
+</div></body></html>
