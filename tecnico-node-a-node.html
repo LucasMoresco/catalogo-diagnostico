@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Técnico · Node-a-node dos workflows</title>
+<style>
+  :root{--bg:#0f1622;--pan:#151f2e;--pan2:#1a2637;--bd:#26334a;--tx:#e6edf6;--mut:#9fb0c6;--or:#ff6a3d;
+        --gr:#3fb27f;--yl:#e0b341;--rd:#e06a6a;--blue:#4b8bf5}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.6 -apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+  .wrap{max-width:1160px;margin:0 auto;padding:26px 20px 110px}
+  h1{font-size:23px;margin:0 0 3px}
+  h2{font-size:18px;margin:34px 0 6px;color:var(--or)}
+  h3{font-size:15px;margin:20px 0 6px;color:#bcd0ea}
+  .sub{color:var(--mut);font-size:12.8px}
+  p{margin:7px 0}
+  code{font-family:"SF Mono",Menlo,monospace;font-size:12px;background:#0b1220;border:1px solid var(--bd);border-radius:4px;padding:1px 5px}
+  .toc{background:var(--pan);border:1px solid var(--bd);border-radius:10px;padding:12px 16px;margin:14px 0;font-size:13px;columns:2}
+  .toc a{color:var(--or);text-decoration:none;display:block;margin:3px 0} .toc a:hover{text-decoration:underline}
+  .tblwrap{overflow-x:auto;border:1px solid var(--bd);border-radius:10px;margin:12px 0}
+  table{border-collapse:collapse;width:100%;min-width:680px}
+  th,td{border-bottom:1px solid var(--bd);padding:8px 11px;text-align:left;vertical-align:top;font-size:12.8px}
+  thead th{background:var(--pan2);position:sticky;top:0}
+  th.n{width:180px} tbody tr:hover td{background:#131e2c}
+  .yes{color:var(--gr);font-weight:700}.no{color:var(--rd);font-weight:700}.warn{color:var(--yl);font-weight:700}.new{color:var(--blue);font-weight:700}
+  .tag{display:inline-block;font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:999px;border:1px solid;vertical-align:middle}
+  .tag.novo{color:var(--blue);border-color:var(--blue)} .tag.alt{color:var(--yl);border-color:var(--yl)} .tag.rem{color:var(--rd);border-color:var(--rd)} .tag.demo{color:var(--or);border-color:var(--or)}
+  .why{color:var(--mut)} .why b{color:var(--tx)}
+  .src{color:#6f7d92;font-size:11px;font-family:monospace}
+  .box{border:1px solid var(--bd);border-left:3px solid var(--or);border-radius:8px;padding:11px 14px;background:var(--pan);margin:12px 0;font-size:13px}
+  .box.gr{border-left-color:var(--gr)}.box.rd{border-left-color:var(--rd)}.box.bl{border-left-color:var(--blue)}
+  .note{color:var(--mut);font-size:12.3px}
+</style></head><body><div class="wrap">
+
+<h1>Comparativo técnico node-a-node dos workflows</h1>
+<div class="sub">O que mudou em cada nó e por quê · nós novos e a razão · base = consulta read-only aos 3 workflows + change-docs · 2026-08-12</div>
+
+<div class="box"><b>Identidade dos workflows.</b>
+<code>Autonomous (original)</code> = <code>fyE5Qz89JSVFSZ9V</code> · <code>Vinícius</code> = <code>2mDb5Il1wWKX1J3w</code> · <code>[Lucas] base</code> = <code>PKeMq4sI65cOfy0K</code>.
+Linhagem: o <b>[Lucas] base é um fork endurecido do Autonomous original</b>; o Vinícius é outro fork do original (e o Demo <code>1iCTNbTaTwMSeVWr</code> é cópia do Vinícius). Fonte técnica: inspeção dos nós + change-docs em <code>catalogo-diagnostico/*.md</code> e <code>pulsus-agents-support-chat/docs/</code>.
+Convenção: <span class="tag novo">NOVO</span> nó/lógica criada · <span class="tag alt">ALT</span> nó existente modificado · <span class="tag rem">REM</span> removido · <span class="tag demo">DEMO</span> só na cópia demo, ainda <b>não</b> no base.</div>
+
+<div class="toc">
+<a href="#matriz">1. Matriz de presença/estado dos nós</a>
+<a href="#guard">2. Guard Telemetry + Guard Session Context (NOVOS)</a>
+<a href="#norm">3. Normalize Output (nó mais alterado)</a>
+<a href="#bcl">4. Build Command List</a>
+<a href="#log">5. Subsistema de logging (NOVO)</a>
+<a href="#sys">6. AI Agent / System Message</a>
+<a href="#tenant">7. Tenant + Tools + Ticket</a>
+<a href="#vini">8. O que o Vinícius fez diferente</a>
+<a href="#demo">9. O que existe só no Demo (portes pendentes)</a>
+<a href="#pend">10. Pendências de porte</a>
+</div>
+
+<h2 id="matriz">1. Matriz de presença / estado dos nós</h2>
+<div class="tblwrap"><table>
+<thead><tr><th class="n">Nó / Área</th><th>Autonomous</th><th>Vinícius</th><th>[Lucas] base</th></tr></thead>
+<tbody>
+<tr><td class="n">AI Agent + Chat Model + Memory</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+<tr><td class="n">Tools (Fetch Apps, Latest Heartbeat, Device App Block, Support Ticket, Playbook RAG)</td><td class="yes">✓ (5)</td><td class="yes">✓ (5)</td><td class="yes">✓ (5)</td></tr>
+<tr><td class="n">Guard Telemetry (hard)</td><td class="no">ausente</td><td class="no">presente, DESATIVADO</td><td class="yes">ativo</td></tr>
+<tr><td class="n">Guard Session Context</td><td class="no">—</td><td class="no">—</td><td class="new">✓ exclusivo</td></tr>
+<tr><td class="n">Normalize Output com <code>applyGuard</code></td><td class="no">"Normalizar saída" (sem guarda)</td><td class="no">234 chars (guarda foi p/ BKP órfão)</td><td class="yes">applyGuard ativo</td></tr>
+<tr><td class="n">Structured Output Parser</td><td class="warn">DESATIVADO</td><td class="no">LIGADO</td><td class="warn">LIGADO (frágil)</td></tr>
+<tr><td class="n">Automation Outcome (Get + Merge)</td><td class="no">ausente</td><td class="no">presente, DESATIVADO</td><td class="yes">ativo</td></tr>
+<tr><td class="n">Logging (Prepare Log Row → Log Interaction)</td><td class="yes">✓ (portado)</td><td class="yes">✓ (portado)</td><td class="new">✓ (origem)</td></tr>
+<tr><td class="n">Log Push Status</td><td class="no">—</td><td class="rem">removido (bug/consenso)</td><td class="yes">✓</td></tr>
+<tr><td class="n">WIPE_APP_DATA no allowlist</td><td class="no">não</td><td class="yes">sim</td><td class="no">não</td></tr>
+<tr><td class="n">App Catalog + Attach Apps</td><td class="no">—</td><td class="no">—</td><td class="no">— (só no Demo)</td></tr>
+<tr><td class="n">RAG / playbook</td><td><code>n8n_vectors_v2</code></td><td><code>n8n_vectors_v3</code></td><td><code>n8n_vectors_v2</code></td></tr>
+<tr><td class="n">System message</td><td>30,9k</td><td>14,5k</td><td class="yes">44,7k (33 seções)</td></tr>
+<tr><td class="n">Carga extra</td><td>ingestão Drive/Sheets + 3 AI Agents BKP</td><td>Normalize Output BKP órfão + Token Splitter</td><td>enxuto, nada desativado</td></tr>
+</tbody></table></div>
+<p class="note">Nomes diferem entre workflows para nós equivalentes (ex.: <code>Normalizar saída</code> no original ≡ <code>Normalize Output</code> nos forks). O diff acima é <b>funcional</b>, não por nome literal.</p>
+
+<h2 id="guard">2. Guard Telemetry + Guard Session Context <span class="tag novo">NOVOS no [Lucas]</span></h2>
+<div class="tblwrap"><table>
+<thead><tr><th class="n">Nó</th><th>O que é / mudou</th><th>Por quê</th></tr></thead>
+<tbody>
+<tr><td class="n"><b>Guard Telemetry</b> <span class="tag novo">NOVO</span></td>
+<td>Nó Postgres inserido <b>em série</b>: <code>AI Agent → Guard Telemetry → Normalize Output</code>, tornando a telemetria um <b>ancestral referenciável</b>. Query <b>sempre-1-linha</b>: <code>SELECT … FROM (SELECT 1) LEFT JOIN LATERAL (heartbeat LIMIT 1) ON true</code> (NULLs se não houver heartbeat). <code>onError: continueRegularOutput</code>.</td>
+<td class="why">Tools (<code>Latest Heartbeat</code>) e nós de ramo paralelo <b>não são referenciáveis</b> de um Code node; um Postgres serial que retorne 0 linhas quebraria a resposta. Este desenho nunca quebra a resposta e é <b>fail-open</b>. <span class="src">guarda-deterministica-2026-08-05</span></td></tr>
+<tr><td class="n"><b>Guard Session Context</b> <span class="tag novo">NOVO / exclusivo</span></td>
+<td>Nó só presente no [Lucas] (guarda de contexto de sessão, além do telemetry).</td>
+<td class="why">Camada extra de guarda determinística da linha [Lucas]. <span class="src">inspeção do wf</span></td></tr>
+</tbody></table></div>
+
+<h2 id="norm">3. Normalize Output <span class="tag alt">o nó mais alterado</span></h2>
+<p class="note">É a "rede determinística" pós-modelo. Concentra as correções que <b>não dependem de o modelo obedecer</b>.</p>
+<div class="tblwrap"><table>
+<thead><tr><th class="n">Mudança</th><th>O que</th><th>Por quê</th></tr></thead>
+<tbody>
+<tr><td class="n">Guarda de telemetria <code>applyGuard()</code> <span class="tag novo">NOVO</span></td>
+<td>Lê a telemetria real e <b>bloqueia comando cuja premissa a contradiz</b>, trocando por mensagem determinística: <b>RESTART bloqueado se RAM&lt;85% E temp&lt;42°C</b>; <b>DELETE_PATH se storage livre&gt;12%</b>. Comando removido (não vai, sem botão). Try/catch <b>fail-open</b> (telemetria NULL ⇒ não bloqueia nada). Limiares no código.</td>
+<td class="why">Regra de prompt <b>não é garantia</b> — o modelo vaza ~1/3 das vezes (ofereceu RESTART com hardware verde, inventou activity). Precisa de camada determinística independente da obediência do modelo. <span class="src">guarda-deterministica-2026-08-05</span></td></tr>
+<tr><td class="n">Guarda estende p/ LAUNCH <span class="tag alt">ALT</span></td>
+<td>Bloqueia <code>LAUNCH_APP_ACTIVITY</code> cujo <code>app/identifier</code> comece com <code>com.android.settings</code> (sem precisar de telemetria); substitui por passo-a-passo genérico. Apps reais não afetados.</td>
+<td class="why">Agente inventava activity de AOSP (<code>…PowerUsageSummary</code>) inexistente na Samsung; launch falhava e ele narrava "abrindo agora". <span class="src">guarda-deterministica-2026-08-05</span></td></tr>
+<tr><td class="n">Fix JSON vazando <span class="tag alt">ALT</span></td>
+<td><code>cleanAssistantMessage()</code>: regex estendida p/ consumir uma chave <code>{</code> opcional antes do 1º campo + rede de segurança removendo <code>{</code>/<code>[</code> solto no fim (<code>replace(/\s*[\{\[]\s*$/,'')</code>).</td>
+<td class="why">Modelo devolve texto + bloco JSON concatenado; <code>coerce()</code> jogava tudo como <code>assistant_message</code> e sobrava um <code>{</code> visível no balão (4/6 testes de bateria). "Passava imagem amadora." <span class="src">fix-json-vazando-normalize-output-2026-08-05</span></td></tr>
+<tr><td class="n">Confirmação por texto <span class="tag alt">ALT</span></td>
+<td>Leitor de afirmação determinístico: lê <code>$('Normalize Input').message</code>; se for afirmação (<code>sim, pode, claro, confirmo, prossiga, ok…</code>), marca o comando confirmado (<code>requires_confirmation=false, text_confirmed=true</code>) sem depender do modelo re-emitir. A trava <code>ALWAYS_CONFIRM</code> foi relaxada p/ comandos já <code>text_confirmed</code>.</td>
+<td class="why">Os <b>botões de confirmação não renderizam</b> no app (bug de runtime, redeploy fora de alcance). Lucas autorizou confirmar por texto. 1º turno (sem confirmação) ainda não dispara. <span class="src">confirmacao-por-texto-2026-08-05</span></td></tr>
+<tr><td class="n">Injeção de FIND_ME + duration <span class="tag novo">NOVO</span></td>
+<td>Se a fala pede o som/localizar (regex de intenção) e o modelo não emitiu FIND_ME, o workflow <b>injeta</b> o comando; qualquer FIND_ME ganha <code>duration</code> válido (default <code>"30"</code>).</td>
+<td class="why">Modelo narrava "acionando o som" com <code>commands:[]</code> (verdade de ação furada); e <code>FIND_ME.kt</code> é no-op sem <code>duration</code>. É não-destrutivo, então emitir direto é seguro. <span class="src">fix-sinal-sonoro-find-me-2026-08-06</span></td></tr>
+<tr><td class="n">Campo <code>audit</code> <span class="tag alt">ALT</span></td>
+<td>Emite <code>{ output, audit }</code>: <code>guard_version</code>, <code>__malformed</code> (recuperação por regex), <code>applyGuard</code> retorna <code>{blocked, capBlocked}</code>, <code>_injected</code> (FIND_ME), <code>_fallbackUsed</code>.</td>
+<td class="why">Alimenta as colunas do log (guard_actions, malformed_output, fallback_used, guard_version). <span class="src">log-interacoes-chat-fase1</span></td></tr>
+</tbody></table></div>
+
+<h2 id="bcl">4. Build Command List</h2>
+<div class="tblwrap"><table>
+<thead><tr><th class="n">Mudança</th><th>O que</th><th>Por quê</th></tr></thead>
+<tbody>
+<tr><td class="n">Allowlist de comandos <span class="tag alt">ALT</span></td>
+<td>Base: RESTART/SETTINGS/REBIRTH/FIND_ME/DELETE_PATH/CLEAR_INSTALL_SESSIONS/UNINSTALL/UPDATE_PLAY_STORE/LAUNCH_APP_ACTIVITY/STOP_SUPPORT_AGENT_SESSION (<b>sem WIPE_APP_DATA</b>). Acessibilidade desligada (camada 1, <code>complexList=[]</code>).</td>
+<td class="why">Limitar raio de ação; automação por acessibilidade adiada. <span class="src">mudancas-unificado; demo-cache-license-poc</span></td></tr>
+<tr><td class="n">Ramo de log pendurado aqui <span class="tag novo">NOVO</span></td>
+<td><code>Build Command List → Prepare Log Row → Log Interaction</code> (paralelo à resposta).</td>
+<td class="why">É o <b>único nó que roda tanto no caminho do agente quanto no de confirmação</b> → um insert por execução, sem duplicar. <span class="src">log-interacoes-chat-fase1</span></td></tr>
+</tbody></table></div>
+
+<h2 id="log">5. Subsistema de logging <span class="tag novo">NOVO — nasceu no [Lucas]</span></h2>
+<div class="tblwrap"><table>
+<thead><tr><th class="n">Nó / peça</th><th>O que</th><th>Por quê</th></tr></thead>
+<tbody>
+<tr><td class="n">Tabela <code>agent_interactions</code> <span class="tag novo">NOVA</span></td><td>Cred <code>Postgres pulsus-vector-store</code>; migração idempotente. Colunas aditivas: guard_actions, malformed_output, fallback_used, ram_pct, battery_temp, storage_free_pct, device_owner, client_ts, guard_version, push_status, tokens_in/out, cost_usd.</td><td class="why">Não existia log estruturado por interação (só o blob do LangChain). <span class="src">log-interacoes-chat-fase1</span></td></tr>
+<tr><td class="n"><b>Prepare Log Row</b> <span class="tag novo">NOVO</span></td><td>Code (<code>onError: continueRegularOutput</code>): monta o INSERT com escaping, try/catch fail-open; lê Normalize Input / Sessions Webhook / Guard Telemetry (device_id) / Normalize Output (audit) / Build Command List (commands) / Tenant Resolved?. Hash djb2 do api_token; <code>latency_ms</code>, <code>model</code>, <code>execution_id</code>. Erro ⇒ <code>SELECT 1</code>.</td><td class="why">INSERT em Code (não <code>queryReplacement</code>, que fatiava em vírgulas → "invalid syntax"). <span class="src">log-interacoes-chat-fase1</span></td></tr>
+<tr><td class="n"><b>Log Interaction</b> <span class="tag novo">NOVO</span></td><td>Postgres <code>executeQuery {{ $json.sql }}</code>, fail-open.</td><td class="why">Persiste a linha sem quebrar a execução. <span class="src">log-interacoes-chat-fase1</span></td></tr>
+<tr><td class="n"><b>Log Push Status</b> <span class="tag novo">NOVO</span></td><td>Postgres: UPDATE <code>push_status</code> do resultado do Push, encadeado <code>Log Interaction → Log Push Status</code>.</td><td class="why">Capturar confirmação do broker (fcm/mqtt) na mesma linha. <b>Obs:</b> ao portar p/ o Vinícius eu encadeei errado (dava erro nas execuções sem push) e foi removido de lá. <span class="src">log-interacoes-chat-fase1</span></td></tr>
+<tr><td class="n">Enricher (workflow à parte) <span class="tag novo">NOVO</span></td><td><code>[Lucas] Agent Interactions Token Enricher</code> (<code>IPjrZDjOnvq2JPgx</code>): a cada 10 min, preenche tokens/custo lendo a execução via API (gpt-4.1-mini). <b>$0.005–0.011/interação</b>, custo dominado pelo input.</td><td class="why">Saída do AI Agent não expõe tokens; sub-nós não são referenciáveis em runtime. <span class="src">log-interacoes-chat-fase1</span></td></tr>
+<tr><td class="n">Query API (auditoria) <span class="tag novo">NOVO</span></td><td><code>[Lucas] Agent Interactions Query API</code> (<code>k6sTljoXaEReevqE</code>): GET read-only, <code>x-audit-key</code>, filtros whitelistados, nunca roda SQL do caller.</td><td class="why">Metabase bloqueado por senha de DB; entregar o viewer sem ela. <span class="src">log-interacoes-chat-fase1</span></td></tr>
+</tbody></table></div>
+
+<h2 id="sys">6. AI Agent / System Message <span class="tag alt">44,7k, 33 seções (~3× o [Lilian] anterior)</span></h2>
+<div class="tblwrap"><table>
+<thead><tr><th class="n">Seção / fix</th><th>O que</th><th>Por quê</th></tr></thead>
+<tbody>
+<tr><td class="n">Seções novas de blindagem <span class="tag novo">NOVO</span></td><td>CORREÇÕES CRÍTICAS · <b>ENTRADA NÃO-CONFIÁVEL</b> (anti prompt-injection) · <b>VERDADE DE AÇÃO</b> (não afirmar sem emitir) · <b>RESOLUÇÃO DE IDENTIFIER</b> (regra inviolável) · FASE 2.5 · <b>CONFIRMAÇÃO OBRIGATÓRIA</b> · SEGURANÇA DE SAÍDA · <b>TRAVA DE IDIOMA</b>. Support Ticket Tool substituiu o Email Sender do [Lilian].</td><td class="why">Blindagem vs injeção / alucinação / verdade de ação. <span class="src">mudancas-unificado; consolidacao-support-agent-lucas</span></td></tr>
+<tr><td class="n">Prompt: "app suspenso ≠ causa" <span class="tag alt">ALT</span></td><td><code>suspended/hide</code> só é causa de sintoma <b>específico de app</b>; proibido como causa de sintoma <b>genérico</b> (lentidão) sem app citado.</td><td class="why">Agente pegava um WhatsApp suspenso e cravava como causa da lentidão vaga, emitindo SETTINGS. App suspenso não consome recurso. <span class="src">otimizacao-v1-prompt-2026-08-05</span></td></tr>
+<tr><td class="n">Prompt: "telemetria prevalece" <span class="tag alt">ALT</span></td><td>Se métrica de hardware está normal na telemetria, proibido cravá-la como causa mesmo que o usuário afirme; não emitir DELETE_PATH/RESTART.</td><td class="why">Usuário disse "sem espaço", agente tinha 90 GB livres e concordou. (Reforçado pela guarda determinística.) <span class="src">otimizacao-v1-prompt-2026-08-05</span></td></tr>
+<tr><td class="n">Prompt: "não inventar activity" <span class="tag alt">ALT</span></td><td>Sem activity pré-validada no playbook, não emitir <code>LAUNCH_APP_ACTIVITY</code>; dar passos em texto e <code>commands:[]</code>.</td><td class="why">Activity inventada → ActivityNotFound narrando sucesso. <span class="src">otimizacao-v1-prompt-2026-08-05</span></td></tr>
+<tr><td class="n">Fix A — fonte de idioma <span class="tag alt">ALT</span></td><td><code>{{ $json.language }}</code> → <code>{{ $('Normalize Input').first().json.language }}</code> (3 ocorrências).</td><td class="why"><code>language</code> se perdia no merge de tenant (virava None) → sempre caía em <code>pt</code>; es/en nunca respeitados. <span class="src">fix-idioma-agente-autonomous</span></td></tr>
+<tr><td class="n">Fix B — TRAVA DE IDIOMA <span class="tag novo">NOVO (bloco)</span></td><td>Bloco no <b>fim</b> do system message: few-shots em inglês são só formato; responder 100% no <code>language</code> do device, sobrepondo os exemplos.</td><td class="why">Modelo seguia o idioma da mensagem + viés de ~40 few-shots em inglês. LLM pesa o fim do prompt. Validado 100% (4/4 pt, 3/3 es). <span class="src">fix-idioma-agente-autonomous</span></td></tr>
+</tbody></table></div>
+
+<h2 id="tenant">7. Tenant + Tools + Ticket <span class="tag alt">era de hardening (2026-06-25)</span></h2>
+<div class="tblwrap"><table>
+<thead><tr><th class="n">Nó</th><th>O que</th><th>Por quê</th></tr></thead>
+<tbody>
+<tr><td class="n">Resolve/Merge Tenant + Tenant Resolved? <span class="tag novo">NOVOS</span></td><td>Resolução <b>fail-closed</b> de tenant; schema dinâmico <code>tenant__pulsus_agents__{{tenant_id}}</code>.</td><td class="why">Isolamento multi-tenant; token desconhecido ⇒ fail-closed. <span class="src">mudancas-unificado</span></td></tr>
+<tr><td class="n">Tools (Latest Heartbeat / Fetch Apps / Device App Block) <span class="tag alt">ALT</span></td><td>SQL injection → parametrizado <code>$1</code>; schema dinâmico por tenant.</td><td class="why">Segurança. <span class="src">mudancas-unificado</span></td></tr>
+<tr><td class="n">Postgres Chat Memory <span class="tag alt">ALT</span></td><td><code>sessionKey</code> amarrado ao device via <code>djb2(api_token)</code>.</td><td class="why">Defesa contra envenenamento de memória. <span class="src">mudancas-unificado</span></td></tr>
+<tr><td class="n">Support Ticket Tool <span class="tag alt">ALT</span></td><td>Ticket por e-mail → clone dedicado (substituiu o Email Sender do [Lilian]).</td><td class="why">Padronizar ticketing. <span class="src">mudancas-unificado</span></td></tr>
+<tr><td class="n">Sessions Webhook <span class="tag alt">ALT</span></td><td>Auth <code>headerAuth</code> (X-API-Key) — depois <b>desligada p/ QA</b>, voltar no cutover.</td><td class="why">Auth; conveniência de QA (risco: webhook aberto). <span class="src">mudancas-unificado</span></td></tr>
+</tbody></table></div>
+
+<h2 id="vini">8. O que o Vinícius fez diferente</h2>
+<div class="box rd">
+<b>Desligou 3 nós de propósito</b> (todos presentes, <code>disabled=true</code>): <code>Guard Telemetry</code>, <code>Get Automation Outcome</code>, <code>Merge Outcome</code> → sem guarda de telemetria (confabula) e sem canal de verdade-de-ação. A lógica da guarda foi movida p/ um <code>Normalize Output Moresco | BKP</code> <b>órfão</b> (sem entrada/saída), e o <code>Normalize Output</code> ativo virou um wrapper de 234 chars (só <code>JSON.parse</code>).<br>
+<b>Parser LIGADO</b> — forte correlação com as <b>respostas malformadas</b> nos casos de ação. <b>RAG</b> = <code>n8n_vectors_v3</code> (em ingestão). Prompt enxuto (14,5k). Tem <code>Token Splitter</code> p/ o RAG. (O log que adicionei tem o <code>Log Push Status</code> removido — bug meu de encadeamento.)
+</div>
+
+<h2 id="demo">9. O que existe só no Demo (portes pendentes) <span class="tag demo">DEMO</span></h2>
+<p class="note">O Demo é cópia do Vinícius com o "fix de ação". Estas peças <b>não estão no [Lucas] base</b> — estão marcadas para importar.</p>
+<div class="tblwrap"><table>
+<thead><tr><th class="n">Peça</th><th>O que</th><th>Por quê</th></tr></thead>
+<tbody>
+<tr><td class="n">App Catalog + Attach Apps <span class="tag demo">NOVO no Demo</span></td><td><code>App Catalog</code> (Postgres: <code>app_name, identifier</code> do tenant) + <code>Attach Apps</code> (Code) anexam o catálogo real ao fluxo (<code>Tenant Resolved? → App Catalog → Attach Apps → Route By Action</code>).</td><td class="why">Resolver <code>data.identifier</code> por <b>nome do app</b>, sem hardcode. <span class="src">demo-copia-wipe-identifier</span></td></tr>
+<tr><td class="n">Injeção de identifier <span class="tag demo">DEMO</span></td><td>Antes do Build Command List, injeta <code>data.identifier</code> em WIPE/UNINSTALL casando o nome citado com o <code>app_catalog</code>; se não resolve, pede pra especificar.</td><td class="why">Modelo emitia WIPE sem <code>identifier</code> → <code>WIPE_APP_DATA.kt</code> no-op silencioso enquanto o agent-service devolvia <code>ok</code>. <span class="src">demo-copia-wipe-identifier</span></td></tr>
+<tr><td class="n">WIPE no allowlist + follow-up <span class="tag demo">DEMO</span></td><td>WIPE_APP_DATA no allowlist; <code>commands</code> expostos p/ o botão aparecer; pós-WIPE injeta <code>LAUNCH_APP_ACTIVITY</code> (abrir app) — e no turno pós-WIPE só o follow-up entra (senão re-empurra o WIPE).</td><td class="why">Base não tem WIPE; UX encadeada limpar→abrir. Validado no A53. <span class="src">demo-copia-wipe-identifier</span></td></tr>
+<tr><td class="n">Structured Output Parser <span class="tag demo">DESATIVADO no Demo</span></td><td>Parser desligado (<code>hasOutputParser=false</code> + conexão removida); resiliência fica no <code>coerce()</code> do Normalize Output.</td><td class="why">Parser estrito falhava intermitentemente ("Model output doesn't fit required format"). Plano §6.4: desligar no base também. <span class="src">demo-copia-wipe-identifier</span></td></tr>
+</tbody></table></div>
+
+<h2 id="pend">10. Pendências de porte (documentadas, ainda não no base)</h2>
+<div class="box bl">
+Segundo <code>consolidacao-support-agent-lucas.md</code>, ainda <b>não foram aplicados ao [Lucas] base</b>: <b>App Catalog + Attach Apps</b>, <b>WIPE no allowlist</b>, e a recomendação de <b>desligar o parser no base</b> (o <code>coerce()</code> já cobre). Também há a nota de <b>portar tudo p/ o v2</b> (<code>FaB8KAYtKIksf0xp</code>, cópia futura) e a <b>auth do webhook a re-ligar no cutover</b>.
+</div>
+<div class="box gr">
+<b>Leitura de decisão (resumo técnico).</b> O <b>[Lucas] base</b> concentra o hardening determinístico (Guard Telemetry, applyGuard, verdade-de-ação, logging, trava de idioma) com <b>nada desativado</b>. O que falta nele é exatamente o que o <b>Demo</b> já tem (App Catalog + WIPE + parser off). O <b>Vinícius</b> desligou as guardas e mantém o parser ligado — a combinação que explica confabulação + respostas malformadas. Caminho técnico: <b>base [Lucas] + importar App Catalog/WIPE do Demo + desligar o parser</b>.
+</div>
+
+<div class="note" style="margin-top:22px">Fontes: inspeção read-only dos workflows <code>fyE5…/2mDb…/PKeMq…</code> + change-docs em <code>catalogo-diagnostico/</code> (consolidacao-support-agent-lucas, guarda-deterministica, confirmacao-por-texto, fix-json-vazando-normalize-output, fix-sinal-sonoro-find-me, otimizacao-v1-prompt, log-interacoes-chat-fase1, demo-copia-wipe-identifier) e <code>pulsus-agents-support-chat/docs/</code> (mudancas-unificado, fix-idioma-agente-autonomous, n8n-guardrails-analise). Nenhum workflow foi alterado nesta análise.</div>
+
+</div></body></html>
