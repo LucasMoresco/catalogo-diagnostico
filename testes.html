@@ -117,12 +117,13 @@ const WORKFLOWS = [
   { id:'autonomous', label:'Autonomous (original)' },
   { id:'vinicius',   label:'Vinícius (2mDb · o dele)' },
   { id:'lucas',      label:'[Lucas] base (PKeMq)' },
-  { id:'demo',       label:'Demo cache/WIPE (cópia do Vinícius)' },
 ];
 const WF_KEY = 'tracker_wf';
 let currentWf = (function(){
-  try{ const u=new URLSearchParams(location.search).get('wf'); if(u) return u; }catch(e){}
-  try{ return localStorage.getItem(WF_KEY) || 'vinicius'; }catch(e){ return 'vinicius'; }
+  const ids = WORKFLOWS.map(w=>w.id);
+  let v='vinicius';
+  try{ const u=new URLSearchParams(location.search).get('wf'); v = u || localStorage.getItem(WF_KEY) || 'vinicius'; }catch(e){}
+  return ids.includes(v) ? v : 'vinicius';
 })();
 // [valor no banco, classe do botao, rotulo]  -- ordem = pior -> melhor apos iniciar
 const SB   = [
